@@ -1,9 +1,5 @@
 #include <Arduino.h>
-#if defined(ESP32)
-  #include <WiFi.h>
-#elif defined(ESP8266)
-  #include <ESP8266WiFi.h>
-#endif
+#include <ESP8266WiFi.h>
 #include <Firebase_ESP_Client.h>
 
 //Provide the token generation process info.
@@ -28,8 +24,8 @@ FirebaseAuth auth;
 FirebaseConfig config;
 
 unsigned long sendDataPrevMillis = 0;
-int count = 0;
 bool signupOK = false;
+int IR = D4;
 
 void setup(){
   Serial.begin(115200);
@@ -61,6 +57,7 @@ void setup(){
 
   /* Assign the callback function for the long running token generation task */
   config.token_status_callback = tokenStatusCallback; //see addons/TokenHelper.h
+  pinMode(IR,INPUT);
   
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
@@ -69,20 +66,9 @@ void setup(){
 void loop(){
   if (Firebase.ready() && signupOK && (millis() - sendDataPrevMillis > 15000 || sendDataPrevMillis == 0)){
     sendDataPrevMillis = millis();
+    int buttonState = digitalRead(IR);
     // Write an Int number on the database path test/int
-    if (Firebase.RTDB.setInt(&fbdo, "test/int", count)){
-      Serial.println("PASSED");
-      Serial.println("PATH: " + fbdo.dataPath());
-      Serial.println("TYPE: " + fbdo.dataType());
-    }
-    else {
-      Serial.println("FAILED");
-      Serial.println("REASON: " + fbdo.errorReason());
-    }
-    count++;
-    
-    // Write an Float number on the database path test/float
-    if (Firebase.RTDB.setFloat(&fbdo, "test/float", 0.01 + random(0,100))){
+    if (Firebase.RTDB.setInt(&fbdo, "test/int", buttonState)){
       Serial.println("PASSED");
       Serial.println("PATH: " + fbdo.dataPath());
       Serial.println("TYPE: " + fbdo.dataType());
